@@ -41,8 +41,8 @@
     p { color: var(--subtext0); margin: 0 0 20px 0; text-align: center; }
 
     .workspace {
-      width: 100%; max-width: 940px; display: grid;
-      grid-template-columns: 1fr 300px; gap: 16px; align-items: start;
+      width: 100%; max-width: 920px; display: grid;
+      grid-template-columns: 1fr 305px; gap: 16px; align-items: start;
     }
 
     .card {
@@ -52,21 +52,13 @@
 
     .card h3 { color: var(--accent); margin: 0 0 10px 0; font-size: 0.98rem; }
 
-    .zoom-bar {
-      display: flex; justify-content: center; align-items: center;
-      gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
-    }
-
     .canvas-stage {
-      width: 100%; max-width: 550px; height: 500px; margin: 0 auto;
-      overflow: auto; display: flex; justify-content: center; align-items: center;
-      background-color: var(--base); border: 2px solid var(--surface1);
-      border-radius: 8px; padding: 14px;
+      width: 100%; max-width: 540px; min-height: 300px; margin: 0 auto;
+      display: flex; justify-content: center; align-items: center;
     }
 
     .canvas-wrap {
-      flex-shrink: 0; margin: auto;
-      border: 2px solid var(--surface1); border-radius: 4px; overflow: hidden;
+      border: 2px solid var(--surface1); border-radius: 8px; overflow: hidden;
       background-image:
         linear-gradient(45deg, #2a2b3d 25%, transparent 25%),
         linear-gradient(-45deg, #2a2b3d 25%, transparent 25%),
@@ -84,10 +76,9 @@
 
     .btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
     .btn-grid.four { grid-template-columns: repeat(4, 1fr); }
-
     .custom-res-row { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
-
     .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+
     input[type="color"] {
       width: 46px; height: 36px; border: 2px solid var(--surface1);
       border-radius: 6px; background: var(--base); cursor: pointer; padding: 2px;
@@ -103,22 +94,19 @@
     .toggle-row {
       display: flex; justify-content: space-between; align-items: center;
       padding: 8px 10px; background: var(--base); border: 2px solid var(--surface1);
-      border-radius: 6px; margin-bottom: 10px; font-size: 0.88rem; font-weight: bold;
+      border-radius: 6px; margin-bottom: 14px; font-size: 0.9rem; font-weight: bold;
     }
     .toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
 
-    .export-row { display: flex; gap: 8px; }
+    .export-row { display: flex; gap: 6px; flex-wrap: wrap; }
     .primary-btn {
-      flex: 1; background-color: var(--accent); color: var(--base);
-      border: 2px solid var(--accent); border-radius: 6px; padding: 8px 12px;
+      flex: 1; min-width: 120px; background-color: var(--accent); color: var(--base);
+      border: 2px solid var(--accent); border-radius: 6px; padding: 8px 10px;
       font-family: monospace; font-weight: bold; cursor: pointer;
     }
     .primary-btn:hover { opacity: 0.92; }
 
-    @media (max-width: 780px) {
-      .workspace { grid-template-columns: 1fr; }
-      .canvas-stage { height: 360px; }
-    }
+    @media (max-width: 760px) { .workspace { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -146,16 +134,10 @@
   </div>
 
   <h1>🎨 Pixel Art Maker</h1>
-  <p>Draw crisp sprites, zoom in for detail & export scaled PNGs</p>
+  <p>Draw crisp sprites, import any image & export in multiple formats</p>
 
   <div class="workspace">
     <div class="card">
-      <div class="zoom-bar">
-        <button class="ctrl-btn" onclick="changeZoom(-0.5)">🔍−</button>
-        <span id="zoomLabel" style="font-weight:bold; min-width:54px; text-align:center;">100%</span>
-        <button class="ctrl-btn" onclick="changeZoom(0.5)">🔍+</button>
-        <button class="ctrl-btn" onclick="resetZoom()">Reset Zoom</button>
-      </div>
       <div class="canvas-stage" id="canvasStage">
         <div class="canvas-wrap" id="canvasWrap">
           <canvas id="pixelCanvas" width="512" height="512"></canvas>
@@ -190,11 +172,6 @@
         <button class="ctrl-btn active" id="gridBtn" onclick="toggleGrid()"># Grid: ON</button>
       </div>
 
-      <label class="toggle-row" for="rightClickEraseToggle">
-        <span>🖱️ Right-Click Erase</span>
-        <input type="checkbox" id="rightClickEraseToggle" checked>
-      </label>
-
       <h3>Color & Catppuccin Swatches</h3>
       <div class="color-row">
         <input type="color" id="colorPicker" value="#89b4fa" aria-label="Custom Color">
@@ -209,28 +186,36 @@
         <button class="ctrl-btn" onclick="clearCanvas()">🗑️ Clear</button>
         <button class="ctrl-btn" onclick="document.getElementById('importInput').click()">📂 Import</button>
       </div>
-      <input type="file" id="importInput" accept="image/png,image/jpeg,image/webp" hidden>
+      <input type="file" id="importInput" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.svg,.bmp,.ico,.avif,.tif,.tiff" hidden>
 
       <label class="toggle-row" for="autoSaveToggle">
         <span>💾 Auto-Save Draft</span>
         <input type="checkbox" id="autoSaveToggle" checked>
       </label>
 
-      <h3>Export Crisp PNG</h3>
+      <h3>Export Sprite</h3>
       <div class="export-row">
+        <select id="exportFormat" class="ctrl-select" aria-label="Export Format">
+          <option value="png" selected>PNG</option>
+          <option value="webp">WEBP</option>
+          <option value="jpg">JPG</option>
+          <option value="bmp">BMP</option>
+          <option value="ico">ICO</option>
+          <option value="svg">SVG</option>
+        </select>
         <select id="exportScale" class="ctrl-select" aria-label="Export Scale">
           <option value="1">1×</option>
           <option value="10" selected>10×</option>
           <option value="20">20×</option>
           <option value="32">32×</option>
         </select>
-        <button class="primary-btn" onclick="exportPNG()">⬇️ Download PNG</button>
+        <button class="primary-btn" onclick="exportArt()">⬇️ Export</button>
       </div>
     </div>
   </div>
 
   <a href="/" class="back-link">← Back to Dev Hub</a>
-  <script>
+    <script>
     const themes = {
       mocha: {
         base: '#1e1e2e', mantle: '#181825', surface0: '#313244', surface1: '#45475a', text: '#cdd6f4', subtext0: '#a6adc8',
@@ -272,7 +257,6 @@
 
     const DRAFT_KEY = 'devhub-pixel-art-draft';
     const AUTOSAVE_PREF_KEY = 'devhub-pixel-art-autosave';
-    const RCLICK_PREF_KEY = 'devhub-pixel-art-rclick';
 
     const canvas = document.getElementById('pixelCanvas');
     const canvasWrap = document.getElementById('canvasWrap');
@@ -281,66 +265,39 @@
     const colorPicker = document.getElementById('colorPicker');
     const hexLabel = document.getElementById('hexLabel');
     const autoSaveToggle = document.getElementById('autoSaveToggle');
-    const rightClickEraseToggle = document.getElementById('rightClickEraseToggle');
     const customWInput = document.getElementById('customW');
     const customHInput = document.getElementById('customH');
     const resBadge = document.getElementById('resBadge');
-    const zoomLabel = document.getElementById('zoomLabel');
 
     let gridW = 16;
     let gridH = 16;
-    let zoomLevel = 1;
     let pixels = Array(gridW * gridH).fill(null);
     let activeTool = 'pencil';
     let activeColor = '#89b4fa';
     let mirrorMode = false;
     let showGrid = true;
     let isDrawing = false;
-    let tempRightErase = false;
     let strokeChanged = false;
     let undoStack = [];
     let redoStack = [];
-
-    function syncResolutionUI() {
+          function syncResolutionUI() {
       resBadge.textContent = gridW + '×' + gridH;
       customWInput.value = gridW;
       customHInput.value = gridH;
-      zoomLabel.textContent = Math.round(zoomLevel * 100) + '%';
-
       document.querySelectorAll('#sizeBtns .ctrl-btn').forEach(b => {
         const s = parseInt(b.dataset.size, 10);
         b.classList.toggle('active', gridW === s && gridH === s);
       });
 
-      const baseSide = Math.min((canvasStage.clientWidth || 480) - 28, (canvasStage.clientHeight || 480) - 28, 460);
-      const baseScale = Math.max(2, Math.floor(baseSide / Math.max(gridW, gridH)));
-      const dispW = Math.round(gridW * baseScale * zoomLevel);
-      const dispH = Math.round(gridH * baseScale * zoomLevel);
-
+      const maxSide = Math.min(canvasStage.clientWidth || 500, 520);
+      const scale = Math.max(1, Math.floor(maxSide / Math.max(gridW, gridH)));
+      const dispW = gridW * scale;
+      const dispH = gridH * scale;
       canvasWrap.style.width = dispW + 'px';
       canvasWrap.style.height = dispH + 'px';
       canvas.width = dispW;
       canvas.height = dispH;
     }
-
-    function changeZoom(delta) {
-      zoomLevel = Math.min(4, Math.max(0.5, Math.round((zoomLevel + delta) * 10) / 10));
-      syncResolutionUI();
-      drawBoard();
-    }
-
-    function resetZoom() {
-      zoomLevel = 1;
-      syncResolutionUI();
-      drawBoard();
-    }
-
-    canvasStage.addEventListener('wheel', e => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        changeZoom(e.deltaY < 0 ? 0.5 : -0.5);
-      }
-    }, { passive: false });
 
     function renderSwatches() {
       const grid = document.getElementById('swatchGrid');
@@ -366,18 +323,13 @@
 
     function saveDraft() {
       if (!autoSaveToggle.checked) return;
-      const payload = { gridW, gridH, pixels, activeColor };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ gridW, gridH, pixels, activeColor }));
     }
 
     function loadDraft() {
-      const rClickPref = localStorage.getItem(RCLICK_PREF_KEY);
-      rightClickEraseToggle.checked = rClickPref === null ? true : rClickPref === 'true';
-
       const pref = localStorage.getItem(AUTOSAVE_PREF_KEY);
       autoSaveToggle.checked = pref === null ? true : pref === 'true';
       if (!autoSaveToggle.checked) return;
-
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       try {
@@ -385,9 +337,7 @@
         if (data && Array.isArray(data.pixels)) {
           gridW = data.gridW || data.gridSize || 16;
           gridH = data.gridH || data.gridSize || 16;
-          if (data.pixels.length === gridW * gridH) {
-            pixels = data.pixels;
-          }
+          if (data.pixels.length === gridW * gridH) pixels = data.pixels;
           if (data.activeColor) setActiveColor(data.activeColor);
         }
       } catch (e) {}
@@ -399,9 +349,6 @@
       else localStorage.removeItem(DRAFT_KEY);
     });
 
-    rightClickEraseToggle.addEventListener('change', () => {
-      localStorage.setItem(RCLICK_PREF_KEY, String(rightClickEraseToggle.checked));
-    });
     function pushHistory() {
       undoStack.push(pixels.slice());
       if (undoStack.length > 40) undoStack.shift();
@@ -431,7 +378,7 @@
 
       for (let y = 0; y < gridH; y++) {
         for (let x = 0; x < gridW; x++) {
-          const color = pixels[y * gridW + x];
+          const color = pixels.at(y * gridW + x);
           if (color) {
             ctx.fillStyle = color;
             ctx.fillRect(Math.floor(x * cellW), Math.floor(y * cellH), Math.ceil(cellW), Math.ceil(cellH));
@@ -464,8 +411,8 @@
         const pt = stack.pop();
         if (pt.x < 0 || pt.x >= gridW || pt.y < 0 || pt.y >= gridH) continue;
         const idx = pt.y * gridW + pt.x;
-        if (pixels[idx] !== targetColor) continue;
-        pixels[idx] = replacementColor;
+        if (pixels.at(idx) !== targetColor) continue;
+        pixels.splice(idx, 1, replacementColor);
         strokeChanged = true;
         stack.push({ x: pt.x + 1, y: pt.y }, { x: pt.x - 1, y: pt.y }, { x: pt.x, y: pt.y + 1 }, { x: pt.x, y: pt.y - 1 });
       }
@@ -474,68 +421,59 @@
     function applyToolAt(x, y) {
       if (x < 0 || x >= gridW || y < 0 || y >= gridH) return;
       const idx = y * gridW + x;
-      const effectiveTool = tempRightErase ? 'eraser' : activeTool;
 
-      if (effectiveTool === 'eyedropper') {
-        const picked = pixels[idx];
+      if (activeTool === 'eyedropper') {
+        const picked = pixels.at(idx);
         if (picked) setActiveColor(picked);
         setTool('pencil');
         return;
       }
 
-      if (effectiveTool === 'bucket') {
-        floodFill(x, y, pixels[idx], activeColor);
+      if (activeTool === 'bucket') {
+        floodFill(x, y, pixels.at(idx), activeColor);
         if (mirrorMode) {
           const mx = gridW - 1 - x;
-          floodFill(mx, y, pixels[y * gridW + mx], activeColor);
+          floodFill(mx, y, pixels.at(y * gridW + mx), activeColor);
         }
         drawBoard();
         return;
       }
 
-      const val = effectiveTool === 'eraser' ? null : activeColor;
-      if (pixels[idx] !== val) {
-        pixels[idx] = val;
+      const val = activeTool === 'eraser' ? null : activeColor;
+      if (pixels.at(idx) !== val) {
+        pixels.splice(idx, 1, val);
         strokeChanged = true;
       }
       if (mirrorMode) {
         const mx = gridW - 1 - x;
         const mIdx = y * gridW + mx;
-        if (pixels[mIdx] !== val) {
-          pixels[mIdx] = val;
+        if (pixels.at(mIdx) !== val) {
+          pixels.splice(mIdx, 1, val);
           strokeChanged = true;
         }
       }
       drawBoard();
     }
-
-    function getCellFromEvent(e) {
+          function getCellFromEvent(e) {
       const rect = canvas.getBoundingClientRect();
       const x = Math.floor(((e.clientX - rect.left) / rect.width) * gridW);
       const y = Math.floor(((e.clientY - rect.top) / rect.height) * gridH);
       return { x, y };
     }
 
-    canvas.addEventListener('contextmenu', e => {
-      if (rightClickEraseToggle.checked) e.preventDefault();
-    });
-
     canvas.addEventListener('pointerdown', e => {
-      if (e.button === 2 && !rightClickEraseToggle.checked) return;
       e.preventDefault();
       canvas.setPointerCapture(e.pointerId);
       isDrawing = true;
-      tempRightErase = (e.button === 2 && rightClickEraseToggle.checked);
       strokeChanged = false;
-      if (tempRightErase || activeTool !== 'eyedropper') pushHistory();
+      if (activeTool !== 'eyedropper') pushHistory();
       const cell = getCellFromEvent(e);
       applyToolAt(cell.x, cell.y);
     });
 
     canvas.addEventListener('pointermove', e => {
       if (!isDrawing) return;
-      const effectiveTool = tempRightErase ? 'eraser' : activeTool;
-      if (effectiveTool === 'pencil' || effectiveTool === 'eraser') {
+      if (activeTool === 'pencil' || activeTool === 'eraser') {
         const cell = getCellFromEvent(e);
         applyToolAt(cell.x, cell.y);
       }
@@ -544,10 +482,8 @@
     function endStroke() {
       if (!isDrawing) return;
       isDrawing = false;
-      const wasErasingRight = tempRightErase;
-      tempRightErase = false;
       if (strokeChanged) saveDraft();
-      else if (wasErasingRight || activeTool !== 'eyedropper') undoStack.pop();
+      else if (activeTool !== 'eyedropper') undoStack.pop();
     }
 
     canvas.addEventListener('pointerup', endStroke);
@@ -637,15 +573,15 @@
           const data = octx.getImageData(0, 0, gridW, gridH).data;
 
           for (let i = 0; i < gridW * gridH; i++) {
-            const r = data[i * 4];
-            const g = data[i * 4 + 1];
-            const b = data[i * 4 + 2];
-            const a = data[i * 4 + 3];
+            const r = data.at(i * 4);
+            const g = data.at(i * 4 + 1);
+            const b = data.at(i * 4 + 2);
+            const a = data.at(i * 4 + 3);
             if (a < 128) {
-              pixels[i] = null;
+              pixels.splice(i, 1, null);
             } else {
-              const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-              pixels[i] = hex;
+              const hex = '#' + Array.of(r, g, b).map(v => v.toString(16).padStart(2, '0')).join('');
+              pixels.splice(i, 1, hex);
             }
           }
           drawBoard();
@@ -657,15 +593,97 @@
       e.target.value = '';
     });
 
-    function exportPNG() {
+    function encodeBMP(cnv) {
+      const c = cnv.getContext('2d');
+      const w = cnv.width;
+      const h = cnv.height;
+      const imgData = c.getImageData(0, 0, w, h).data;
+      const rowSize = Math.floor((24 * w + 31) / 32) * 4;
+      const pixelArraySize = rowSize * h;
+      const fileSize = 54 + pixelArraySize;
+      const buffer = new ArrayBuffer(fileSize);
+      const view = new DataView(buffer);
+
+      view.setUint16(0, 0x424d, false);
+      view.setUint32(2, fileSize, true);
+      view.setUint32(10, 54, true);
+      view.setUint32(14, 40, true);
+      view.setInt32(18, w, true);
+      view.setInt32(22, h, true);
+      view.setUint16(26, 1, true);
+      view.setUint16(28, 24, true);
+      view.setUint32(34, pixelArraySize, true);
+
+      let offset = 54;
+      for (let y = h - 1; y >= 0; y--) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          view.setUint8(offset++, imgData.at(i + 2));
+          view.setUint8(offset++, imgData.at(i + 1));
+          view.setUint8(offset++, imgData.at(i));
+        }
+        while ((offset - 54) % rowSize !== 0) view.setUint8(offset++, 0);
+      }
+      return new Blob(Array.of(buffer), { type: 'image/bmp' });
+    }
+
+    async function encodeICO(srcCanvas) {
+      const size = 64;
+      const icoCanvas = document.createElement('canvas');
+      icoCanvas.width = size;
+      icoCanvas.height = size;
+      const ictx = icoCanvas.getContext('2d');
+      ictx.imageSmoothingEnabled = false;
+      ictx.drawImage(srcCanvas, 0, 0, size, size);
+
+      const pngBlob = await new Promise(res => icoCanvas.toBlob(res, 'image/png'));
+      const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
+      const icoBuffer = new ArrayBuffer(22 + pngBytes.length);
+      const view = new DataView(icoBuffer);
+
+      view.setUint16(0, 0, true);
+      view.setUint16(2, 1, true);
+      view.setUint16(4, 1, true);
+      view.setUint8(6, size);
+      view.setUint8(7, size);
+      view.setUint16(10, 1, true);
+      view.setUint16(12, 32, true);
+      view.setUint32(14, pngBytes.length, true);
+      view.setUint32(18, 22, true);
+
+      new Uint8Array(icoBuffer, 22).set(pngBytes);
+      return new Blob(Array.of(icoBuffer), { type: 'image/x-icon' });
+    }
+
+    async function exportArt() {
+      const fmt = document.getElementById('exportFormat').value;
       const scale = parseInt(document.getElementById('exportScale').value, 10) || 10;
+      const filename = 'pixel-art-' + gridW + 'x' + gridH + '-' + scale + 'x.' + fmt;
+
+      if (fmt === 'svg') {
+        const w = gridW * scale;
+        const h = gridH * scale;
+        let rects = '';
+        for (let y = 0; y < gridH; y++) {
+          for (let x = 0; x < gridW; x++) {
+            const color = pixels.at(y * gridW + x);
+            if (color) {
+              rects += '<rect x="' + (x * scale) + '" y="' + (y * scale) + '" width="' + scale + '" height="' + scale + '" fill="' + color + '"/>';
+            }
+          }
+        }
+        const svg = '<svg xmlns="http://w3.org" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges">' + rects + '</svg>';
+        triggerDownload(new Blob(Array.of(svg), { type: 'image/svg+xml' }), filename);
+        return;
+      }
+
       const src = document.createElement('canvas');
       src.width = gridW;
       src.height = gridH;
       const sctx = src.getContext('2d');
       for (let y = 0; y < gridH; y++) {
         for (let x = 0; x < gridW; x++) {
-          const color = pixels[y * gridW + x];
+          const color = pixels.at(y * gridW + x);
           if (color) {
             sctx.fillStyle = color;
             sctx.fillRect(x, y, 1, 1);
@@ -677,13 +695,30 @@
       out.width = gridW * scale;
       out.height = gridH * scale;
       const octx = out.getContext('2d');
+      if (fmt === 'jpg' || fmt === 'bmp') {
+        octx.fillStyle = '#1e1e2e';
+        octx.fillRect(0, 0, out.width, out.height);
+      }
       octx.imageSmoothingEnabled = false;
       octx.drawImage(src, 0, 0, out.width, out.height);
 
+      let blob;
+      if (fmt === 'bmp') blob = encodeBMP(out);
+      else if (fmt === 'ico') blob = await encodeICO(src);
+      else if (fmt === 'jpg') blob = await new Promise(res => out.toBlob(res, 'image/jpeg', 0.95));
+      else if (fmt === 'webp') blob = await new Promise(res => out.toBlob(res, 'image/webp', 0.95));
+      else blob = await new Promise(res => out.toBlob(res, 'image/png'));
+
+      triggerDownload(blob, filename);
+    }
+
+    function triggerDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = 'pixel-art-' + gridW + 'x' + gridH + '-' + scale + 'x.png';
-      link.href = out.toDataURL('image/png');
+      link.download = filename;
+      link.href = url;
       link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     window.addEventListener('keydown', e => {
