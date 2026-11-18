@@ -41,8 +41,8 @@
     p { color: var(--subtext0); margin: 0 0 20px 0; text-align: center; }
 
     .workspace {
-      width: 100%; max-width: 920px; display: grid;
-      grid-template-columns: 1fr 295px; gap: 16px; align-items: start;
+      width: 100%; max-width: 940px; display: grid;
+      grid-template-columns: 1fr 300px; gap: 16px; align-items: start;
     }
 
     .card {
@@ -52,13 +52,21 @@
 
     .card h3 { color: var(--accent); margin: 0 0 10px 0; font-size: 0.98rem; }
 
-    .canvas-stage {
-      width: 100%; max-width: 540px; min-height: 300px; margin: 0 auto;
+    .zoom-bar {
       display: flex; justify-content: center; align-items: center;
+      gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+
+    .canvas-stage {
+      width: 100%; max-width: 550px; height: 500px; margin: 0 auto;
+      overflow: auto; display: flex; justify-content: center; align-items: center;
+      background-color: var(--base); border: 2px solid var(--surface1);
+      border-radius: 8px; padding: 14px;
     }
 
     .canvas-wrap {
-      border: 2px solid var(--surface1); border-radius: 8px; overflow: hidden;
+      flex-shrink: 0; margin: auto;
+      border: 2px solid var(--surface1); border-radius: 4px; overflow: hidden;
       background-image:
         linear-gradient(45deg, #2a2b3d 25%, transparent 25%),
         linear-gradient(-45deg, #2a2b3d 25%, transparent 25%),
@@ -95,7 +103,7 @@
     .toggle-row {
       display: flex; justify-content: space-between; align-items: center;
       padding: 8px 10px; background: var(--base); border: 2px solid var(--surface1);
-      border-radius: 6px; margin-bottom: 14px; font-size: 0.9rem; font-weight: bold;
+      border-radius: 6px; margin-bottom: 10px; font-size: 0.88rem; font-weight: bold;
     }
     .toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
 
@@ -107,8 +115,9 @@
     }
     .primary-btn:hover { opacity: 0.92; }
 
-    @media (max-width: 760px) {
+    @media (max-width: 780px) {
       .workspace { grid-template-columns: 1fr; }
+      .canvas-stage { height: 360px; }
     }
   </style>
 </head>
@@ -137,10 +146,16 @@
   </div>
 
   <h1>🎨 Pixel Art Maker</h1>
-  <p>Draw crisp sprites, import pixel art & export scaled PNGs</p>
+  <p>Draw crisp sprites, zoom in for detail & export scaled PNGs</p>
 
   <div class="workspace">
     <div class="card">
+      <div class="zoom-bar">
+        <button class="ctrl-btn" onclick="changeZoom(-0.5)">🔍−</button>
+        <span id="zoomLabel" style="font-weight:bold; min-width:54px; text-align:center;">100%</span>
+        <button class="ctrl-btn" onclick="changeZoom(0.5)">🔍+</button>
+        <button class="ctrl-btn" onclick="resetZoom()">Reset Zoom</button>
+      </div>
       <div class="canvas-stage" id="canvasStage">
         <div class="canvas-wrap" id="canvasWrap">
           <canvas id="pixelCanvas" width="512" height="512"></canvas>
@@ -174,6 +189,11 @@
         <button class="ctrl-btn" id="mirrorBtn" onclick="toggleMirror()">🪞 Mirror: OFF</button>
         <button class="ctrl-btn active" id="gridBtn" onclick="toggleGrid()"># Grid: ON</button>
       </div>
+
+      <label class="toggle-row" for="rightClickEraseToggle">
+        <span>🖱️ Right-Click Erase</span>
+        <input type="checkbox" id="rightClickEraseToggle" checked>
+      </label>
 
       <h3>Color & Catppuccin Swatches</h3>
       <div class="color-row">
@@ -210,7 +230,7 @@
   </div>
 
   <a href="/" class="back-link">← Back to Dev Hub</a>
-    <script>
+  <script>
     const themes = {
       mocha: {
         base: '#1e1e2e', mantle: '#181825', surface0: '#313244', surface1: '#45475a', text: '#cdd6f4', subtext0: '#a6adc8',
@@ -252,6 +272,7 @@
 
     const DRAFT_KEY = 'devhub-pixel-art-draft';
     const AUTOSAVE_PREF_KEY = 'devhub-pixel-art-autosave';
+    const RCLICK_PREF_KEY = 'devhub-pixel-art-rclick';
 
     const canvas = document.getElementById('pixelCanvas');
     const canvasWrap = document.getElementById('canvasWrap');
@@ -260,18 +281,22 @@
     const colorPicker = document.getElementById('colorPicker');
     const hexLabel = document.getElementById('hexLabel');
     const autoSaveToggle = document.getElementById('autoSaveToggle');
+    const rightClickEraseToggle = document.getElementById('rightClickEraseToggle');
     const customWInput = document.getElementById('customW');
     const customHInput = document.getElementById('customH');
     const resBadge = document.getElementById('resBadge');
+    const zoomLabel = document.getElementById('zoomLabel');
 
     let gridW = 16;
     let gridH = 16;
+    let zoomLevel = 1;
     let pixels = Array(gridW * gridH).fill(null);
     let activeTool = 'pencil';
     let activeColor = '#89b4fa';
     let mirrorMode = false;
     let showGrid = true;
     let isDrawing = false;
+    let tempRightErase = false;
     let strokeChanged = false;
     let undoStack = [];
     let redoStack = [];
@@ -280,20 +305,42 @@
       resBadge.textContent = gridW + '×' + gridH;
       customWInput.value = gridW;
       customHInput.value = gridH;
+      zoomLabel.textContent = Math.round(zoomLevel * 100) + '%';
+
       document.querySelectorAll('#sizeBtns .ctrl-btn').forEach(b => {
         const s = parseInt(b.dataset.size, 10);
         b.classList.toggle('active', gridW === s && gridH === s);
       });
 
-      const maxSide = Math.min(canvasStage.clientWidth || 500, 520);
-      const scale = Math.max(1, Math.floor(maxSide / Math.max(gridW, gridH)));
-      const dispW = gridW * scale;
-      const dispH = gridH * scale;
+      const baseSide = Math.min((canvasStage.clientWidth || 480) - 28, (canvasStage.clientHeight || 480) - 28, 460);
+      const baseScale = Math.max(2, Math.floor(baseSide / Math.max(gridW, gridH)));
+      const dispW = Math.round(gridW * baseScale * zoomLevel);
+      const dispH = Math.round(gridH * baseScale * zoomLevel);
+
       canvasWrap.style.width = dispW + 'px';
       canvasWrap.style.height = dispH + 'px';
       canvas.width = dispW;
       canvas.height = dispH;
     }
+
+    function changeZoom(delta) {
+      zoomLevel = Math.min(4, Math.max(0.5, Math.round((zoomLevel + delta) * 10) / 10));
+      syncResolutionUI();
+      drawBoard();
+    }
+
+    function resetZoom() {
+      zoomLevel = 1;
+      syncResolutionUI();
+      drawBoard();
+    }
+
+    canvasStage.addEventListener('wheel', e => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        changeZoom(e.deltaY < 0 ? 0.5 : -0.5);
+      }
+    }, { passive: false });
 
     function renderSwatches() {
       const grid = document.getElementById('swatchGrid');
@@ -324,6 +371,9 @@
     }
 
     function loadDraft() {
+      const rClickPref = localStorage.getItem(RCLICK_PREF_KEY);
+      rightClickEraseToggle.checked = rClickPref === null ? true : rClickPref === 'true';
+
       const pref = localStorage.getItem(AUTOSAVE_PREF_KEY);
       autoSaveToggle.checked = pref === null ? true : pref === 'true';
       if (!autoSaveToggle.checked) return;
@@ -348,7 +398,11 @@
       if (autoSaveToggle.checked) saveDraft();
       else localStorage.removeItem(DRAFT_KEY);
     });
-          function pushHistory() {
+
+    rightClickEraseToggle.addEventListener('change', () => {
+      localStorage.setItem(RCLICK_PREF_KEY, String(rightClickEraseToggle.checked));
+    });
+    function pushHistory() {
       undoStack.push(pixels.slice());
       if (undoStack.length > 40) undoStack.shift();
       redoStack = [];
@@ -420,15 +474,16 @@
     function applyToolAt(x, y) {
       if (x < 0 || x >= gridW || y < 0 || y >= gridH) return;
       const idx = y * gridW + x;
+      const effectiveTool = tempRightErase ? 'eraser' : activeTool;
 
-      if (activeTool === 'eyedropper') {
+      if (effectiveTool === 'eyedropper') {
         const picked = pixels[idx];
         if (picked) setActiveColor(picked);
         setTool('pencil');
         return;
       }
 
-      if (activeTool === 'bucket') {
+      if (effectiveTool === 'bucket') {
         floodFill(x, y, pixels[idx], activeColor);
         if (mirrorMode) {
           const mx = gridW - 1 - x;
@@ -438,7 +493,7 @@
         return;
       }
 
-      const val = activeTool === 'eraser' ? null : activeColor;
+      const val = effectiveTool === 'eraser' ? null : activeColor;
       if (pixels[idx] !== val) {
         pixels[idx] = val;
         strokeChanged = true;
@@ -461,19 +516,26 @@
       return { x, y };
     }
 
+    canvas.addEventListener('contextmenu', e => {
+      if (rightClickEraseToggle.checked) e.preventDefault();
+    });
+
     canvas.addEventListener('pointerdown', e => {
+      if (e.button === 2 && !rightClickEraseToggle.checked) return;
       e.preventDefault();
       canvas.setPointerCapture(e.pointerId);
       isDrawing = true;
+      tempRightErase = (e.button === 2 && rightClickEraseToggle.checked);
       strokeChanged = false;
-      if (activeTool !== 'eyedropper') pushHistory();
+      if (tempRightErase || activeTool !== 'eyedropper') pushHistory();
       const cell = getCellFromEvent(e);
       applyToolAt(cell.x, cell.y);
     });
 
     canvas.addEventListener('pointermove', e => {
       if (!isDrawing) return;
-      if (activeTool === 'pencil' || activeTool === 'eraser') {
+      const effectiveTool = tempRightErase ? 'eraser' : activeTool;
+      if (effectiveTool === 'pencil' || effectiveTool === 'eraser') {
         const cell = getCellFromEvent(e);
         applyToolAt(cell.x, cell.y);
       }
@@ -482,8 +544,10 @@
     function endStroke() {
       if (!isDrawing) return;
       isDrawing = false;
+      const wasErasingRight = tempRightErase;
+      tempRightErase = false;
       if (strokeChanged) saveDraft();
-      else if (activeTool !== 'eyedropper') undoStack.pop();
+      else if (wasErasingRight || activeTool !== 'eyedropper') undoStack.pop();
     }
 
     canvas.addEventListener('pointerup', endStroke);
